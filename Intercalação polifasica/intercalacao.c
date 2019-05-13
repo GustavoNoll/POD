@@ -6,9 +6,9 @@
 #include "quicksort.h"
 
 #define RAM 5
-#define NUM_NUMS 35
-#define NUM_CAMINHOS 3
+#define NUM_NUMS 20
 #define VALOR_GRANDE 99999
+#define ARQ_TEMP 3
 
 // Cria um arquivo temporario chamado nome com tam numeros aleatorios.
 // Os numeros gerados sÃ£o mostrados na tela.
@@ -71,15 +71,27 @@ void retirar_N_GRANDE(char *nome_arq, FILE **arqstemp,int indice,int* vetor,int 
     fecha_arqs(3,arqstemp);
 }
 
-void ler_vetor(char *nome_arq, FILE **arqstemp,int indice,int* vetor,int tam){
+void ler_vetor(char *nome_arq, FILE **arqstemp,int indice,int**vetor,int tam_Base){
     abre_arqs_temp(indice,indice+1,nome_arq,arqstemp,"rb");
     int i;
-    for(i=0;i<tam;i++)
+    for(i=0;i<tam_Base;i++)
         fread(&vetor[i], sizeof(int), 1, arqstemp[indice]);
     fclose(arqstemp[indice]);
 }
 
-void intercalacao_polifasica(int num_caminhos,FILE **arqstemp,char *nome_arq,int n_de_blocos,int fibo,int n){
+void limpar_arquivo(char *nome_arq, FILE **arqstemp,int indice){
+    abre_arqs_temp(indice,indice+1,nome_arq,arqstemp,"w");
+    fclose(arqstemp[indice]);
+}
+
+void resto(char *nome_arq, FILE **arqstemp,int indice,int** vet,int i){
+    limpar_arquivo(nome_arq,arqstemp,indice);
+    abre_arqs_temp(indice,indice+1,nome_arq,arqstemp,"wb");
+    fwrite(vet,sizeof(int)*(i),1,arqstemp[indice]);
+    fclose(arqstemp[indice]);
+}
+
+void intercalacao_polifasica(FILE **arqstemp,char *nome_arq,int n_de_blocos,int fibo,int n){
     int qtd_no_blocos=2,vet_aux[fibo],aux,no_de_blocos=n_de_blocos;
 
     int i=0,arquivo_vazio=2,arquivo_maior=0,arquivo_menor=1;
@@ -94,7 +106,6 @@ void intercalacao_polifasica(int num_caminhos,FILE **arqstemp,char *nome_arq,int
 
       //intercalação
       int buffer[no_de_blocos*qtd_no_blocos];
-      printf("\n");
       while(!feof(arqstemp[arquivo_menor])){
         if (i>=qtd_no_blocos*no_de_blocos) break;
         int j;
@@ -121,16 +132,13 @@ void intercalacao_polifasica(int num_caminhos,FILE **arqstemp,char *nome_arq,int
       for(i=0;i<fibo-aux;i++)
         fread(&vet_aux[i], sizeof(int), 1, arqstemp[arquivo_maior]);
 
-    //limpar Arquivo
-      fclose(arqstemp[arquivo_menor]);
-      abre_arqs_temp(arquivo_menor,arquivo_menor+1,nome_arq,arqstemp,"w");
-
-    //retirar elementos ja ordenados
-      fclose(arqstemp[arquivo_maior]);
-      abre_arqs_temp(arquivo_maior,arquivo_maior+1,nome_arq,arqstemp,"w");
-      //colocar restantes
-      fwrite(vet_aux,sizeof(int)*(i),1,arqstemp[arquivo_maior]);
-      //atualiza
+      //limpar Arquivo
+      limpar_arquivo(nome_arq,arqstemp,arquivo_menor);
+      //retirar elementos ja ordenados e colocar o resto
+      resto(nome_arq,arqstemp,arquivo_maior,&vet_aux,i);
+      //
+      fecha_arqs(ARQ_TEMP,arqstemp);
+      //atualiza indices
       aux=arquivo_maior;
       arquivo_maior=arquivo_vazio;
       arquivo_vazio=arquivo_menor;
@@ -138,7 +146,7 @@ void intercalacao_polifasica(int num_caminhos,FILE **arqstemp,char *nome_arq,int
       qtd_no_blocos=fibo_proximo(qtd_no_blocos+1);
       no_de_blocos=fibo_ant(no_de_blocos);
       //fecha arq
-      fecha_arqs(num_caminhos,arqstemp);
+      fecha_arqs(ARQ_TEMP,arqstemp);
     }
     ler_vetor(nome_arq,arqstemp,arquivo_maior,&vet_aux,n);
     retirar_N_GRANDE(nome_arq,arqstemp,arquivo_maior,vet_aux,n);
@@ -146,14 +154,14 @@ void intercalacao_polifasica(int num_caminhos,FILE **arqstemp,char *nome_arq,int
 
 
 
-void distribui_poli(int num_caminhos, char *nome_arq,int n){
+void distribui_poli(char *nome_arq,int n){
   FILE *arq = fopen(nome_arq,"rb");
-  FILE **arqstemp = malloc(sizeof(FILE *) * (2));
+  FILE **arqstemp = malloc(sizeof(FILE *) * (ARQ_TEMP));
   int fibo=fibo_proximo(n);
   int fibo_atual=fibo_ant(fibo);
   int fibo_anterior=fibo-fibo_atual;
   int buffer[fibo_atual], i=0;
-  abre_arqs_temp(0,2,nome_arq,arqstemp,"wb"); //abre args temporarios
+  abre_arqs_temp(0,ARQ_TEMP-1,nome_arq,arqstemp,"wb"); //abre args temporarios
 
   //Precisa refazer para n que não é fibonacci
   fread(&buffer, sizeof(int), fibo_atual, arq); // le o arquivo de entrada para a RAM
@@ -167,9 +175,9 @@ void distribui_poli(int num_caminhos, char *nome_arq,int n){
   }
   // trata os ultimos numeros do arquivo
   fwrite(buffer, sizeof(int), fibo_anterior, arqstemp[1]); // escreve para o arquivo temporario atual
-  fecha_arqs(num_caminhos-1, arqstemp);
+  fecha_arqs(ARQ_TEMP-1, arqstemp);
   // TODO
-  intercalacao_polifasica(num_caminhos,arqstemp, nome_arq,fibo_anterior,fibo,n);
+  intercalacao_polifasica(arqstemp, nome_arq,fibo_anterior,fibo,n);
 }
 
 
@@ -208,8 +216,8 @@ int main(){
   char nome_arq[]="teste.arq";
   char *nome_arq_temp = malloc(sizeof(char)*strlen(nome_arq)+3); // suporta ate .99 arquivos
   cria_arq_rand(nome_arq, NUM_NUMS);
-  distribui_poli(NUM_CAMINHOS, nome_arq,NUM_NUMS);
-  for (int i=0; i<NUM_CAMINHOS; i++){
+  distribui_poli(nome_arq,NUM_NUMS);
+  for (int i=0; i<ARQ_TEMP; i++){
     sprintf(nome_arq_temp, "%s.%d", nome_arq, i);
     printf("------- %s:\n", nome_arq_temp);
     le_arq(nome_arq_temp);
