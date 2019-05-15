@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -6,7 +6,7 @@
 #include "quicksort.h"
 
 #define RAM 5
-#define NUM_NUMS 1
+#define NUM_NUMS 10
 #define VALOR_GRANDE 99999
 #define ARQ_TEMP 3
 
@@ -180,12 +180,13 @@ void distribui_poli(char *nome_arq,int n){
   int fibo_atual=fibo_ant(fibo);
   int fibo_anterior=fibo-fibo_atual;
   int buffer[fibo_atual], i=0;
-  abre_arqs_temp(0,ARQ_TEMP-1,nome_arq,arqstemp,"wb"); //abre args temporarios
   if (NUM_NUMS==1){
+    abre_arqs_temp(0,1,nome_arq,arqstemp,"wb"); //abre args temporarios
     fread(&buffer, sizeof(int), NUM_NUMS, arq);
     fwrite(buffer, sizeof(int)*NUM_NUMS, 1, arqstemp[0]);
     fecha_arqs(ARQ_TEMP-1, arqstemp);
   }else{
+    abre_arqs_temp(0,ARQ_TEMP-1,nome_arq,arqstemp,"wb"); //abre args temporarios
     //Precisa refazer para n que não é fibonacci
     fread(&buffer, sizeof(int), fibo_atual, arq); // le o arquivo de entrada para a RAM
     fwrite(buffer, sizeof(int)*fibo_atual, 1, arqstemp[i]); // escreve para o arquivo temporario atual
