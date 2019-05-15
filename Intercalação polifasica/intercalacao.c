@@ -6,7 +6,7 @@
 #include "quicksort.h"
 
 #define RAM 5
-#define NUM_NUMS 10
+#define NUM_NUMS 1000
 #define VALOR_GRANDE 99999
 #define ARQ_TEMP 3
 
@@ -182,9 +182,9 @@ void distribui_poli(char *nome_arq,int n){
   int buffer[fibo_atual], i=0;
   if (NUM_NUMS==1){
     abre_arqs_temp(0,1,nome_arq,arqstemp,"wb"); //abre args temporarios
-    fread(&buffer, sizeof(int), NUM_NUMS, arq);
-    fwrite(buffer, sizeof(int)*NUM_NUMS, 1, arqstemp[0]);
-    fecha_arqs(ARQ_TEMP-1, arqstemp);
+    fread(&buffer, sizeof(int), 1, arq);
+    fwrite(buffer, sizeof(int), 1, arqstemp[0]);
+    fecha_arqs(1, arqstemp);
   }else{
     abre_arqs_temp(0,ARQ_TEMP-1,nome_arq,arqstemp,"wb"); //abre args temporarios
     //Precisa refazer para n que não é fibonacci
@@ -196,6 +196,7 @@ void distribui_poli(char *nome_arq,int n){
         for(i=n-fibo_atual;i<fibo_anterior;i++){
             buffer[i]=VALOR_GRANDE;
         }
+
     }
     // trata os ultimos numeros do arquivo
     fwrite(buffer, sizeof(int), fibo_anterior, arqstemp[1]); // escreve para o arquivo temporario atual
